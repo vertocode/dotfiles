@@ -1,0 +1,59 @@
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# ------ GIT ALIASES ------
+# Commit all changes with the provided message
+alias commit='f() { git add . && git commit -m "$1"; }; f'
+alias amend='git add . && git commit --amend --no-edit'
+# Update local main branch
+alias pull='git fetch origin main && git merge origin/main'
+# Update main and push the current branch
+alias push='git push origin HEAD'
+alias fpush='git push origin HEAD --force-with-lease'
+# Update main and create a new branch
+alias new='f() { git fetch origin main && git checkout main && git reset --hard origin/main && git checkout -b "$1"; }; f'
+# bun completions
+[ -s "/Users/evertonvanoni/.bun/_bun" ] && source "/Users/evertonvanoni/.bun/_bun"
+
+# ------ JUJUTSTU ALIASES -----
+alias jclone='jj git clone --colocate $1'
+alias jinit='jj git init --colocate'
+alias jlog='jj log' 
+alias jdescribe='f() { jj describe "${2:-@}" -m "$1"; }; f'
+# $1 = commit message, $2 bookmark name / branch name. 
+alias jnewmain='f() { jj git fetch && jj new main -m "$1" && jj bookmark create "$2"; }; f'
+alias jnewcurrent='f() { jj git fetch && jj new @ -m "$1" && jj bookmark create "$2"; }; f'
+alias jcommit='jj new @ -m "$1"'
+jdiff() {
+  local BOOKMARK
+  BOOKMARK=$(jj log -r @ --no-graph --template 'bookmarks.join(" ")')
+  BOOKMARK=${BOOKMARK%% *}
+  BOOKMARK=${BOOKMARK%\*}
+  if [[ -z "$BOOKMARK" ]]; then
+    print -u2 "jdiff: no bookmark found on @"
+    return 1
+  fi
+  jj diff --from "$BOOKMARK@origin" --to "$BOOKMARK"
+}
+alias jpush='jj git push --all --deleted'
+alias jtrack='jj bookmark track $1 --remote=origin'
+alias juntrack='jj bookmark untrack $1'
+alias jfetch='jj git fetch --all-remotes'
+alias jdelete='jj delete bookmark $1'
+alias jsquash='jj squash'
+#   ::@ | ::bookmarks()  — all ancestors of @ and of local bookmarks
+#   ~ ::main@$remote     — exclude commits already on main (keeps only local work)
+#   & mutable()          — exclude immutable commits so -s doesn't try to rewrite
+#                          commits that were pushed by others or already merged
+#   roots(...)           — pick the base of each remaining chain; paired with -s so
+#                          the entire stack is rebased together preserving parent-
+#                          child structure (-r would flatten all commits onto main)
+#   --skip-emptied       - drops empty commits; useful after landing a PR from a stack on main and rebasing
+#                          it is like auto-dropping commits.
+alias jrebase='jj rebase -s "roots(((::@ | ::bookmarks()) ~ ::main@origin) & mutable())" -d "main@origin" --skip-emptied'
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
