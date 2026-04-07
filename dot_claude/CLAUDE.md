@@ -1,0 +1,72 @@
+# Global Claude Instructions
+
+## Version control: always use jj (Jujutsu) aliases
+
+All repos use Jujutsu (`jj`) with Git colocated. **Never use raw `git commit`, `git push`, or `git checkout` — always prefer the `jj` aliases from `~/.zshrc`.**
+
+Always run `source ~/.zshrc` before using any alias.
+
+### Key aliases
+
+| Alias | Command | Purpose |
+|-------|---------|---------|
+| `jlog` | `jj log` | View commit graph |
+| `jdescribe "<msg>"` | `jj describe -m "<msg>"` | Set the description of the current change (`@`) |
+| `jdescribe "<msg>" <rev>` | `jj describe <rev> -m "<msg>"` | Set description of a specific revision |
+| `jnewmain "<msg>" <bookmark>` | `jj git fetch && jj new main -m "<msg>" && jj bookmark create <bookmark>` | Start a new change from main |
+| `jnewcurrent "<msg>" <bookmark>` | `jj git fetch && jj new @ -m "<msg>" && jj bookmark create <bookmark>` | Start a new change on top of current |
+| `jcommit` | `jj new @ -m "$1"` | Commit current change and start a new empty one |
+| `jdiff` | shows diff vs origin for current bookmark | Review local changes vs remote |
+| `jpush` | `jj git push --all --deleted` | Push all bookmarks and delete remote ones that were deleted locally |
+| `jtrack <bookmark>` | `jj bookmark track <bookmark> --remote=origin` | Track a remote bookmark |
+| `juntrack <bookmark>` | `jj bookmark untrack <bookmark>` | Untrack a remote bookmark |
+| `jfetch` | `jj git fetch --all-remotes` | Fetch from all remotes |
+| `jdelete <bookmark>` | `jj bookmark delete <bookmark>` | Delete a local bookmark |
+| `jsquash` | `jj squash` | Squash current change into parent |
+| `jrebase` | rebase entire local stack onto `main@origin` | Rebase all mutable local commits onto latest main |
+| `jclone <url>` | `jj git clone --colocate <url>` | Clone a repo with jj+git colocated |
+| `jinit` | `jj git init --colocate` | Init jj in an existing git repo |
+
+### Typical workflows
+
+- **Start work from main:** `source ~/.zshrc && jnewmain "feat: description" my-bookmark-name`
+- **Amend current change:** `source ~/.zshrc && jdescribe "updated message"`
+- **Push changes:** `source ~/.zshrc && jpush`
+- **Check diff vs remote:** `source ~/.zshrc && jdiff`
+- **Rebase onto latest main:** `source ~/.zshrc && jrebase`
+
+### If a needed jj command is missing from ~/.zshrc
+
+Ask the user if they want to add it before proceeding. Do not run raw `jj` commands that are not aliased without confirming first.
+
+## Pull Request format
+
+Always use `gh pr create` with `--base main` (or the correct target branch). Always pass `--draft` unless the user explicitly says the PR is ready for review. Always use `--head <bookmark-name>` since repos use jj colocated with git and `gh` cannot detect the current branch automatically.
+
+Every PR body **must** follow this structure:
+
+```
+## Description
+
+<what the PR does and why>
+
+## Jira Task
+
+https://spanxis.atlassian.net/browse/<TICKET-ID>
+
+## Demo
+
+Before | After
+-- | --
+<before state> | <after state>
+
+## How can QA test
+
+1. <step one>
+2. <step two>
+...
+```
+
+- If there is no Jira ticket, omit that section.
+- If there is no visual demo, replace the table with a brief explanation of the observable change.
+- Do NOT append any "Generated with Claude Code" footer.
