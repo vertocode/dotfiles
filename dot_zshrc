@@ -22,6 +22,7 @@ alias jclone='jj git clone --colocate $1'
 alias jinit='jj git init --colocate'
 alias jlog='jj log' 
 jbranch() { jj log -r "::@ ~ ::${1:-main}@origin"; } 
+alias jedit='jj edit $1'
 alias jdescribe='f() { jj describe "${2:-@}" -m "$1"; }; f'
 # $1 = commit message, $2 bookmark name / branch name. 
 alias jnewmain='f() { jj git fetch && jj new main -m "$1" && jj bookmark create "$2"; }; f'
