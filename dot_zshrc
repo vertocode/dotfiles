@@ -35,7 +35,7 @@ jdiff() {
     print -u2 "jdiff: no bookmark found on @"
     return 1
   fi
-  jj diff --from "$BOOKMARK@origin" --to "$BOOKMARK"
+  jj diff --from "$BOOKMARK" --to "$BOOKMARK@origin"
 }
 alias jpush='jj git push --all --deleted'
 alias jtrack='jj bookmark track $1 --remote=origin'
