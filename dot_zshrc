@@ -38,7 +38,18 @@ jdiff() {
     return 1
   fi
   jj diff --from "$BOOKMARK" --to "$BOOKMARK@origin"
-}
+}          
+jrestore() {
+  local BOOKMARK
+  BOOKMARK=$(jj log -r @ --no-graph --template 'bookmarks.join(" ")')
+  BOOKMARK=${BOOKMARK%% *}
+  BOOKMARK=${BOOKMARK%\*}
+  if [[ -z "$BOOKMARK" ]]; then
+    print -u2 "jdiff: no bookmark found on @"
+    return 1
+  fi
+  jj restore --from "$BOOKMARK@origin"
+}      
 alias jpush='jj git push --all --deleted'
 alias jtrack='jj bookmark track $1 --remote=origin'
 alias juntrack='jj bookmark untrack $1'
