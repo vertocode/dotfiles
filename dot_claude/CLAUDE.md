@@ -1,10 +1,15 @@
 # Global Claude Instructions
 
-## Version control: always use jj (Jujutsu) aliases
+## Version control
 
-All repos use Jujutsu (`jj`) with Git colocated. **Never use raw `git commit`, `git push`, or `git checkout` — always prefer the `jj` aliases from `~/.zshrc`.**
+Check for a `.jj` folder in the repo root before choosing a workflow:
+
+- **If `.jj` exists** — the repo uses Jujutsu (colocated with git). Use the `jj` aliases from `~/.zshrc`. Never use raw `git commit`, `git push`, or `git checkout`.
+- **If `.jj` does not exist** — use the standard `git` aliases from `~/.zshrc` (`commit`, `push`, `pull`, `new`, etc.).
 
 Always run `source ~/.zshrc` before using any alias.
+
+### jj aliases (repos with `.jj`)
 
 ### Key aliases
 
@@ -27,7 +32,7 @@ Always run `source ~/.zshrc` before using any alias.
 | `jclone <url>` | `jj git clone --colocate <url>` | Clone a repo with jj+git colocated |
 | `jinit` | `jj git init --colocate` | Init jj in an existing git repo |
 
-### Typical workflows
+### Typical jj workflows
 
 - **Start work from main:** `source ~/.zshrc && jnewmain "feat: description" my-bookmark-name`
 - **Amend current change:** `source ~/.zshrc && jdescribe "updated message"`
@@ -38,6 +43,17 @@ Always run `source ~/.zshrc` before using any alias.
 ### If a needed jj command is missing from ~/.zshrc
 
 Ask the user if they want to add it before proceeding. Do not run raw `jj` commands that are not aliased without confirming first.
+
+### git aliases (repos without `.jj`)
+
+| Alias | Purpose |
+|-------|---------|
+| `commit "<msg>"` | `git add . && git commit -m "<msg>"` |
+| `amend` | `git add . && git commit --amend --no-edit` |
+| `pull` | Fetch and merge `origin/main` |
+| `push` | Push current branch to origin |
+| `fpush` | Force-push with lease |
+| `new "<branch>"` | Checkout main, reset hard, create new branch |
 
 ## Pull Request format
 
