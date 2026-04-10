@@ -18,16 +18,16 @@ alias new='f() { git fetch origin main && git checkout main && git reset --hard 
 [ -s "/Users/evertonvanoni/.bun/_bun" ] && source "/Users/evertonvanoni/.bun/_bun"
 
 # ------ JUJUTSTU ALIASES -----
-alias jclone='jj git clone --colocate $1'
+jclone() { jj git clone --colocate "$1"; }
 alias jinit='jj git init --colocate'
-alias jlog='jj log' 
-jbranch() { jj log -r "::@ ~ ::${1:-main}@origin"; } 
-alias jedit='jj edit $1'
-alias jdescribe='f() { jj describe "${2:-@}" -m "$1"; }; f'
-# $1 = commit message, $2 bookmark name / branch name. 
-alias jnewmain='f() { jj git fetch && jj new main -m "$1" && jj bookmark create "$2"; }; f'
-alias jnewcurrent='f() { jj git fetch && jj new @ -m "$1" && jj bookmark create "$2"; }; f'
-alias jcommit='jj new @ -m "$1"'
+alias jlog='jj log'
+jbranch() { jj log -r "::@ ~ ::${1:-main}@origin"; }
+jedit() { jj edit "$1"; }
+jdescribe() { jj describe "${2:-@}" -m "$1"; }
+# $1 = commit message, $2 bookmark name / branch name.
+jnewmain() { jj git fetch && jj new main -m "$1" && jj bookmark create "$2"; }
+jnewcurrent() { jj git fetch && jj new @ -m "$1" && jj bookmark create "$2"; }
+jcommit() { jj new @ -m "$1"; }
 jdiff() {
   local BOOKMARK
   BOOKMARK=$(jj log -r @ --no-graph --template 'bookmarks.join(" ")')
@@ -51,10 +51,10 @@ jrestore() {
   jj restore --from "$BOOKMARK@origin"
 }      
 alias jpush='jj git push --all --deleted'
-alias jtrack='jj bookmark track $1 --remote=origin'
-alias juntrack='jj bookmark untrack $1'
+jtrack() { jj bookmark track "$1" --remote=origin; }
+juntrack() { jj bookmark untrack "$1"; }
 alias jfetch='jj git fetch --all-remotes'
-alias jdelete='jj delete bookmark $1'
+jdelete() { jj bookmark delete "$1"; }
 alias jsquash='jj squash'
 #   ::@ | ::bookmarks()  — all ancestors of @ and of local bookmarks
 #   ~ ::main@$remote     — exclude commits already on main (keeps only local work)
