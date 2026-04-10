@@ -55,6 +55,14 @@ Ask the user if they want to add it before proceeding. Do not run raw `jj` comma
 | `fpush` | Force-push with lease |
 | `new "<branch>"` | Checkout main, reset hard, create new branch |
 
+## Custom scripts (Rust CLIs in ~/scripts/)
+
+| Alias | Purpose |
+|-------|---------|
+| `repo-clean` | Removes common web dev artifacts from cwd (node_modules, .next, dist, build, .cache, .turbo, coverage, etc.) |
+| `repo-open <folder>` | Finds a folder by exact name under ~/Documents/ and cd into it |
+| `portcheck` | Lists all TCP/UDP ports currently listening on the system |
+
 ## Pull Request format
 
 Always use `gh pr create` with `--base main` (or the correct target branch). Always pass `--draft` unless the user explicitly says the PR is ready for review. Always use `--head <bookmark-name>` since repos use jj colocated with git and `gh` cannot detect the current branch automatically.

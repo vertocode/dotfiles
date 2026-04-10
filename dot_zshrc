@@ -67,6 +67,15 @@ alias jsquash='jj squash'
 #                          it is like auto-dropping commits.
 alias jrebase='jj rebase -s "roots(((::@ | ::bookmarks()) ~ ::main@origin) & mutable())" -d "main@origin" --skip-emptied'
 
+# ------ CUSTOM SCRIPTS (Rust) ------
+alias repo-clean='$HOME/scripts/repo-clean/target/release/repo-clean'
+repo-open() {
+  local dir
+  dir=$("$HOME/scripts/repo-open/target/release/repo-open" "$1") || return 1
+  cd "$dir" || return 1
+}
+alias portcheck='$HOME/scripts/portcheck/target/release/portcheck'
+
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
