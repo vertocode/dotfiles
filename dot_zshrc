@@ -69,7 +69,7 @@ alias jrebase='jj rebase -s "roots(((::@ | ::bookmarks()) ~ ::main@origin) & mut
 
 # ------ CUSTOM SCRIPTS (Rust) ------
 alias repo-clean='$HOME/scripts/repo-clean/target/release/repo-clean'
-repo-open() {
+repo() {
   local dir
   dir=$("$HOME/scripts/repo-open/target/release/repo-open" "$1") || return 1
   cd "$dir" || return 1
