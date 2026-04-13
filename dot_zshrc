@@ -70,8 +70,17 @@ alias jrebase='jj rebase -s "roots(((::@ | ::bookmarks()) ~ ::main@origin) & mut
 # ------ CUSTOM SCRIPTS (Rust) ------
 alias repo-clean='$HOME/scripts/repo-clean/target/release/repo-clean'
 repo() {
+  local bin="$HOME/scripts/repo-open/target/release/repo-open"
+  if [[ ! -x "$bin" ]]; then
+    echo "repo-open binary not found. Build it first:"
+    echo "  cd ~/scripts/repo-open && cargo build --release"
+    echo ""
+    echo "If Rust is not installed:"
+    echo "  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
+    return 1
+  fi
   local dir
-  dir=$("$HOME/scripts/repo-open/target/release/repo-open" "$1") || return 1
+  dir=$("$bin" "$1") || return 1
   cd "$dir" || return 1
 }
 alias portcheck='$HOME/scripts/portcheck/target/release/portcheck'
