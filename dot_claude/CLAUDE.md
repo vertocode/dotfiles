@@ -40,6 +40,48 @@ Always run `source ~/.zshrc` before using any alias.
 - **Check diff vs remote:** `source ~/.zshrc && jdiff`
 - **Rebase onto latest main:** `source ~/.zshrc && jrebase`
 
+### Resolving rebase conflicts
+
+When `jrebase` leaves a commit marked `(conflict)` in `jlog`:
+
+1. **Create a resolution commit on top of the conflicted one:**
+   ```sh
+   jj new <conflicted-change-id>
+   ```
+   `@` is now a clean working copy. jj embeds conflict markers directly in file content.
+
+2. **Edit the files** to resolve the markers. jj conflict markers look like:
+   ```
+   <<<<<<< conflict 1 of N
+   +++++++ <destination side description>
+     ... destination version ...
+   %%%%%%% diff from: <base> to: <our revision>
+     ... diff-style of our changes ...
+   >>>>>>> conflict 1 of N ends
+   ```
+   Replace the entire marker block (including surrounding lines that belong to the conflict) with the resolved code.
+
+3. **Squash the resolution into the conflicted parent:**
+   ```sh
+   jj squash
+   ```
+
+4. **Check if the bookmark needs moving.** After squash, run `jj log`. If you see the same change ID split into two divergent versions — e.g. `xyz/0` (clean) and `xyz/2` (conflict) — and the bookmark is on the conflicted one, move it:
+   ```sh
+   jj bookmark set <bookmark-name> -r <change-id>/0 --allow-backwards
+   ```
+   If the bookmark is already on the clean commit, skip this step.
+
+5. **Push:**
+   ```sh
+   jpush
+   ```
+
+Also: if `jj squash` fails with a git index lock error, delete the stale lock first:
+```sh
+rm -f <repo-root>/.git/index.lock
+```
+
 ### If a needed jj command is missing from ~/.zshrc
 
 Ask the user if they want to add it before proceeding. Do not run raw `jj` commands that are not aliased without confirming first.
