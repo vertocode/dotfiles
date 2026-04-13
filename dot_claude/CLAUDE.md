@@ -72,7 +72,7 @@ Every PR body **must** follow this structure:
 ```
 ## Description
 
-<what the PR does and why>
+<short 1–3 sentence summary of what the PR does and why — keep it minimal>
 
 ## Jira Task
 
