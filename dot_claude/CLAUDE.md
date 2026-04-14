@@ -97,6 +97,12 @@ Ask the user if they want to add it before proceeding. Do not run raw `jj` comma
 | `fpush` | Force-push with lease |
 | `new "<branch>"` | Checkout main, reset hard, create new branch |
 
+## Branch naming convention
+
+Always name branches in the format `JIRA-100/cool-feature` — Jira ticket ID, a slash, then a short kebab-case description of the work.
+
+If the user asks to create a branch but hasn't provided the Jira ticket ID or a description, ask for both before proceeding.
+
 ## Custom scripts (Rust CLIs in ~/scripts/)
 
 | Alias | Purpose |
