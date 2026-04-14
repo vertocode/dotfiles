@@ -27,6 +27,14 @@ jdescribe() { jj describe "${2:-@}" -m "$1"; }
 # $1 = commit message, $2 bookmark name / branch name.
 jnewmain() { jj git fetch && jj new main -m "$1" && jj bookmark create "$2"; }
 jnewcurrent() { jj git fetch && jj new @ -m "$1" && jj bookmark create "$2"; }
+# $1 = from branch, $2 = commit message, $3 = new bookmark name
+jnewfrom() {
+  if [[ -z "$1" || -z "$2" || -z "$3" ]]; then
+    echo "Usage: jnewfrom <from-branch> <commit-message> <new-branch-name>"
+    return 1
+  fi
+  jj git fetch && jj new "$1" -m "$2" && jj bookmark create "$3"
+}
 jcommit() { jj new @ -m "$1"; }
 jdiff() {
   local BOOKMARK
@@ -66,6 +74,28 @@ alias jsquash='jj squash'
 #   --skip-emptied       - drops empty commits; useful after landing a PR from a stack on main and rebasing
 #                          it is like auto-dropping commits.
 alias jrebase='jj rebase -s "roots(((::@ | ::bookmarks()) ~ ::main@origin) & mutable())" -d "main@origin" --skip-emptied'
+# Rebase mutable stack onto the latest remote of the parent branch.
+# Auto-detects the base (e.g. a teammate's branch), falling back to main@origin.
+jrebaseparent() {
+  jj git fetch
+
+  local dest
+  dest=$(jj log \
+    -r "parents(roots(((::@ | ::bookmarks()) ~ ::main@origin) & mutable()))" \
+    --no-graph \
+    --template 'remote_bookmarks.filter(|b| b.remote() == "origin").map(|b| b.name() ++ "@origin").join("")' \
+    2>/dev/null | xargs)
+
+  if [[ -z "$dest" ]]; then
+    dest="main@origin"
+  fi
+
+  echo "jrebaseparent: rebasing onto ${dest}"
+  jj rebase \
+    -s "roots(((::@ | ::bookmarks()) ~ ::main@origin) & mutable())" \
+    -d "${dest}" \
+    --skip-emptied
+}
 
 # ------ CUSTOM SCRIPTS (Rust) ------
 alias repo-clean='$HOME/scripts/repo-clean/target/release/repo-clean'

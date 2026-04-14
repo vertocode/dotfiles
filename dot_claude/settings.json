@@ -8,5 +8,8 @@
   "statusLine": {
     "type": "command",
     "command": "bash \"$HOME/.claude/statusline.sh\""
+  },
+  "permissions": {
+    "defaultMode": "auto"
   }
 }

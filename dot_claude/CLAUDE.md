@@ -118,7 +118,7 @@ Every PR body **must** follow this structure:
 
 ## Jira Task
 
-https://spanxis.atlassian.net/browse/<TICKET-ID>
+https://company.atlassian.net/browse/<TICKET-ID>
 
 ## Demo
 
