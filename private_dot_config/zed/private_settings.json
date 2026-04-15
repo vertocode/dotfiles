@@ -23,4 +23,10 @@
     "light": "One Light",
     "dark": "One Dark",
   },
+  "file_finder": {
+    "file_icons": true
+  },
+  "project_panel": {
+    "show_hidden_files": true
+  },
 }
