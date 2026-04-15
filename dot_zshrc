@@ -85,30 +85,74 @@ alias jrebase='jj rebase -s "roots(((::@ | ::bookmarks()) ~ ::main@origin) & mut
 jrebaseparent() {
   jj git fetch
 
-  local dest
-  dest=$(jj log \
-    -r "parents(roots(((::@ | ::bookmarks()) ~ ::main@origin) & mutable()))" \
+  # Find the change ID of the most recent conflicted mutable ancestor of @.
+  # Used to identify the parent feature branch even when local state is
+  # divergent/conflicted (e.g. someone force-pushed the parent branch).
+  local conflict_change_id
+  conflict_change_id=$(jj log \
+    -r "latest(::@ & mutable() & conflicts())" \
     --no-graph \
-    --template 'remote_bookmarks.filter(|b| b.remote() == "origin").map(|b| b.name() ++ "@origin").join("")' \
+    --template 'change_id.short()' \
     2>/dev/null | xargs)
+
+  # Reset all conflicted local bookmarks to their remote state so the
+  # parent branch reflects what everyone else is working from.
+  local conflicted_bookmarks
+  conflicted_bookmarks=$(jj log -r 'bookmarks() & conflicts()' --no-graph \
+    --template 'bookmarks.map(|b| b.name()).join("\n")' 2>/dev/null)
+  if [[ -n "$conflicted_bookmarks" ]]; then
+    while IFS= read -r bm; do
+      [[ -z "$bm" ]] && continue
+      if jj log -r "${bm}@origin" --no-graph 2>/dev/null | grep -q .; then
+        echo "jrebaseparent: restoring ${bm} to ${bm}@origin"
+        jj bookmark set "${bm}" -r "${bm}@origin"
+      fi
+    done <<< "$conflicted_bookmarks"
+  fi
+
+  # Detect destination: prefer the nearest non-main remote bookmark that
+  # descends from the conflicted ancestor's change ID. This correctly
+  # identifies the parent feature branch even when its local copy was stale.
+  local dest
+  if [[ -n "$conflict_change_id" ]]; then
+    dest=$(jj log \
+      -r "latest((remote_bookmarks() ~ main@origin ~ ancestors(main@origin)) & descendants(${conflict_change_id}))" \
+      --no-graph \
+      --template 'remote_bookmarks.filter(|b| b.remote() == "origin" && b.name() != "main").map(|b| b.name() ++ "@origin").join("")' \
+      2>/dev/null | xargs)
+  fi
+
+  # Fallback: standard detection via mutable root parents
+  if [[ -z "$dest" ]]; then
+    dest=$(jj log \
+      -r "parents(roots(((::@ | ::bookmarks()) ~ ::main@origin) & mutable()))" \
+      --no-graph \
+      --template 'remote_bookmarks.filter(|b| b.remote() == "origin").map(|b| b.name() ++ "@origin").join("")' \
+      2>/dev/null | xargs)
+  fi
 
   if [[ -z "$dest" ]]; then
     dest="main@origin"
   fi
 
-  # If the parent is a feature branch (not main), restore the local bookmark
-  # to match the remote so stale/conflicted local state is cleaned up first.
-  if [[ "$dest" != "main@origin" ]]; then
-    local parent_bookmark="${dest%@origin}"
-    echo "jrebaseparent: restoring ${parent_bookmark} to ${dest}"
-    jj bookmark set "${parent_bookmark}" -r "${dest}"
-  fi
-
   echo "jrebaseparent: rebasing onto ${dest}"
-  jj rebase \
-    -s "roots(((::@ | ::bookmarks()) ~ ::main@origin) & mutable())" \
-    -d "${dest}" \
-    --skip-emptied
+
+  # Rebase only commits unique to this branch: non-conflicted, mutable commits
+  # not already reachable from dest. This takes all of dest (from remote) and
+  # stacks only the children branch's actual work on top — skipping the stale
+  # conflicted ancestor commits from the parent branch.
+  local rebase_root
+  rebase_root=$(jj log \
+    -r "roots((::@ & mutable() & ~conflicts()) ~ ::${dest})" \
+    --no-graph \
+    --template 'change_id' \
+    2>/dev/null | head -1 | xargs)
+
+  if [[ -n "$rebase_root" ]]; then
+    jj rebase -s "${rebase_root}" -d "${dest}" --skip-emptied
+  else
+    echo "jrebaseparent: nothing to rebase, already up to date"
+  fi
 }
 
 # ------ CUSTOM SCRIPTS (Rust) ------
