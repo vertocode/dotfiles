@@ -85,16 +85,6 @@ alias jrebase='jj rebase -s "roots(((::@ | ::bookmarks()) ~ ::main@origin) & mut
 jrebaseparent() {
   jj git fetch
 
-  # Find the change ID of the most recent conflicted mutable ancestor of @.
-  # Used to identify the parent feature branch even when local state is
-  # divergent/conflicted (e.g. someone force-pushed the parent branch).
-  local conflict_change_id
-  conflict_change_id=$(jj log \
-    -r "latest(::@ & mutable() & conflicts())" \
-    --no-graph \
-    --template 'change_id.short()' \
-    2>/dev/null | xargs)
-
   # Reset all conflicted local bookmarks to their remote state so the
   # parent branch reflects what everyone else is working from.
   local conflicted_bookmarks
@@ -110,20 +100,13 @@ jrebaseparent() {
     done <<< "$conflicted_bookmarks"
   fi
 
-  # Detect destination: prefer the nearest non-main remote bookmark that
-  # descends from the conflicted ancestor's change ID. This correctly
-  # identifies the parent feature branch even when its local copy was stale.
+  # Destination: explicit arg takes priority (e.g. jrebaseparent DCC-244-siena-live-chat)
+  # otherwise auto-detect via mutable root parents, falling back to main@origin.
   local dest
-  if [[ -n "$conflict_change_id" ]]; then
-    dest=$(jj log \
-      -r "latest((remote_bookmarks() ~ main@origin ~ ancestors(main@origin)) & descendants(${conflict_change_id}))" \
-      --no-graph \
-      --template 'remote_bookmarks.filter(|b| b.remote() == "origin" && b.name() != "main").map(|b| b.name() ++ "@origin").join("")' \
-      2>/dev/null | xargs)
-  fi
-
-  # Fallback: standard detection via mutable root parents
-  if [[ -z "$dest" ]]; then
+  if [[ -n "$1" ]]; then
+    # Accept with or without @origin suffix
+    dest="${1%@origin}@origin"
+  else
     dest=$(jj log \
       -r "parents(roots(((::@ | ::bookmarks()) ~ ::main@origin) & mutable()))" \
       --no-graph \
@@ -137,10 +120,9 @@ jrebaseparent() {
 
   echo "jrebaseparent: rebasing onto ${dest}"
 
-  # Rebase only commits unique to this branch: non-conflicted, mutable commits
-  # not already reachable from dest. This takes all of dest (from remote) and
-  # stacks only the children branch's actual work on top — skipping the stale
-  # conflicted ancestor commits from the parent branch.
+  # Rebase only non-conflicted mutable commits not already reachable from dest.
+  # Stacks only the actual work of this branch on top of the clean remote parent,
+  # bypassing any stale conflicted ancestor commits from the parent branch.
   local rebase_root
   rebase_root=$(jj log \
     -r "roots((::@ & mutable() & ~conflicts()) ~ ::${dest})" \
