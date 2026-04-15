@@ -48,16 +48,34 @@ jdiff() {
   jj diff --from "$BOOKMARK" --to "$BOOKMARK@origin"
 }          
 jrestore() {
+  # If a file path is given, restore just that file from the remote bookmark.
+  if [[ -n "$1" ]]; then
+    local BOOKMARK
+    BOOKMARK=$(jj log -r @ --no-graph --template 'bookmarks.join(" ")')
+    BOOKMARK=${BOOKMARK%% *}
+    BOOKMARK=${BOOKMARK%\*}
+    if [[ -z "$BOOKMARK" ]]; then
+      print -u2 "jrestore: no bookmark found on @"
+      return 1
+    fi
+    jj restore --from "$BOOKMARK@origin" "$1"
+    return
+  fi
+
+  # No arg: hard-reset the current bookmark to match its remote state and
+  # switch the working copy to that commit (makes local identical to remote).
   local BOOKMARK
   BOOKMARK=$(jj log -r @ --no-graph --template 'bookmarks.join(" ")')
   BOOKMARK=${BOOKMARK%% *}
   BOOKMARK=${BOOKMARK%\*}
   if [[ -z "$BOOKMARK" ]]; then
-    print -u2 "jdiff: no bookmark found on @"
+    print -u2 "jrestore: no bookmark found on @"
     return 1
   fi
-  jj restore --from "$BOOKMARK@origin"
-}      
+  jj git fetch
+  jj bookmark set "${BOOKMARK}" -r "${BOOKMARK}@origin" --allow-backwards
+  jj edit "${BOOKMARK}@origin"
+}
 jpush() {
   if [[ -n "$1" ]]; then
     jj git push --bookmark "$1"
