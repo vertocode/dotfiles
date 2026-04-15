@@ -105,7 +105,7 @@ jrebaseparent() {
       [[ -z "$bm" ]] && continue
       if jj log -r "${bm}@origin" --no-graph 2>/dev/null | grep -q .; then
         echo "jrebaseparent: restoring ${bm} to ${bm}@origin"
-        jj bookmark set "${bm}" -r "${bm}@origin"
+        jj bookmark set "${bm}" -r "${bm}@origin" --allow-backwards
       fi
     done <<< "$conflicted_bookmarks"
   fi
@@ -145,7 +145,7 @@ jrebaseparent() {
   rebase_root=$(jj log \
     -r "roots((::@ & mutable() & ~conflicts()) ~ ::${dest})" \
     --no-graph \
-    --template 'change_id' \
+    --template 'commit_id.short()' \
     2>/dev/null | head -1 | xargs)
 
   if [[ -n "$rebase_root" ]]; then
