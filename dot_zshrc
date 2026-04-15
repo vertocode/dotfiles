@@ -119,17 +119,17 @@ jrebaseparent() {
   fi
 
   # Destination: explicit arg takes priority (e.g. jrebaseparent DCC-244-siena-live-chat)
-  # otherwise auto-detect via mutable root parents, falling back to main@origin.
+  # otherwise auto-detect from the parent of the mutable root of @ only (not
+  # ::bookmarks(), which would pull in unrelated branches and corrupt the result).
   local dest
   if [[ -n "$1" ]]; then
-    # Accept with or without @origin suffix
     dest="${1%@origin}@origin"
   else
     dest=$(jj log \
-      -r "parents(roots(((::@ | ::bookmarks()) ~ ::main@origin) & mutable()))" \
+      -r "parents(roots((::@ ~ ::main@origin) & mutable()))" \
       --no-graph \
       --template 'remote_bookmarks.filter(|b| b.remote() == "origin").map(|b| b.name() ++ "@origin").join("")' \
-      2>/dev/null | xargs)
+      2>/dev/null | head -1 | xargs)
   fi
 
   if [[ -z "$dest" ]]; then
@@ -138,12 +138,13 @@ jrebaseparent() {
 
   echo "jrebaseparent: rebasing onto ${dest}"
 
-  # Rebase only non-conflicted mutable commits not already reachable from dest.
-  # Stacks only the actual work of this branch on top of the clean remote parent,
-  # bypassing any stale conflicted ancestor commits from the parent branch.
+  # Rebase only commits that are unique to this branch: mutable commits in @'s
+  # ancestry that are NOT already reachable from any remote bookmark. This
+  # correctly skips commits belonging to the parent branch even when they appear
+  # as divergent local copies.
   local rebase_root
   rebase_root=$(jj log \
-    -r "roots((::@ & mutable() & ~conflicts()) ~ ::${dest})" \
+    -r "roots((::@ & mutable()) ~ ::remote_bookmarks())" \
     --no-graph \
     --template 'commit_id.short()' \
     2>/dev/null | head -1 | xargs)
