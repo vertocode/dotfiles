@@ -175,6 +175,11 @@ repo() {
 }
 alias portcheck='$HOME/scripts/portcheck/target/release/portcheck'
 
+# Zed IDE CLI — use installed CLI if available, otherwise fall back to app bundle
+if ! command -v zed >/dev/null 2>&1; then
+  alias zed='/Applications/Zed.app/Contents/MacOS/cli'
+fi
+
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"

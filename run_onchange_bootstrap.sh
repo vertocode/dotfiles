@@ -57,4 +57,10 @@ if ! command -v gh >/dev/null 2>&1; then
   brew install gh
 fi
 
+# --- Zed IDE ---
+if [ ! -d "/Applications/Zed.app" ]; then
+  echo "Installing Zed..."
+  brew install --cask zed
+fi
+
 echo "Bootstrap complete."
