@@ -58,7 +58,13 @@ jrestore() {
   fi
   jj restore --from "$BOOKMARK@origin"
 }      
-alias jpush='jj git push --all --deleted'
+jpush() {
+  if [[ -n "$1" ]]; then
+    jj git push --bookmark "$1"
+  else
+    jj git push --all --deleted
+  fi
+}
 jtrack() { jj bookmark track "$1" --remote=origin; }
 juntrack() { jj bookmark untrack "$1"; }
 alias jfetch='jj git fetch --all-remotes'
@@ -88,6 +94,14 @@ jrebaseparent() {
 
   if [[ -z "$dest" ]]; then
     dest="main@origin"
+  fi
+
+  # If the parent is a feature branch (not main), restore the local bookmark
+  # to match the remote so stale/conflicted local state is cleaned up first.
+  if [[ "$dest" != "main@origin" ]]; then
+    local parent_bookmark="${dest%@origin}"
+    echo "jrebaseparent: restoring ${parent_bookmark} to ${dest}"
+    jj bookmark set "${parent_bookmark}" -r "${dest}"
   fi
 
   echo "jrebaseparent: rebasing onto ${dest}"
