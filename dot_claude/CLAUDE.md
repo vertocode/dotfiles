@@ -106,6 +106,16 @@ Whenever a jj alias is added or changed in `~/.zshrc` (or discovered in `~/.zshr
 | `fpush` | Force-push with lease |
 | `new "<branch>"` | Checkout main, reset hard, create new branch |
 
+## Commit message format
+
+Always use conventional commits: `type: short description` on a single line.
+
+- **Types:** `feat`, `fix`, `chore`, `refactor`, `test`, `docs`, `style`, `perf`
+- **Description:** one brief line — a high-level summary, not an exhaustive list of changes
+- **Examples:** `feat: add user auth`, `fix: null check in parser`, `chore: update deps`
+
+No body, no bullet points, no multi-line messages unless the user explicitly asks for more detail.
+
 ## Branch naming convention
 
 Always name branches in the format `JIRA-100/cool-feature` — Jira ticket ID, a slash, then a short kebab-case description of the work.
