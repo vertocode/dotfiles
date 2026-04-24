@@ -140,6 +140,10 @@ When the user asks to work on a repo in a specific branch or ticket, **always** 
 - If the user has not provided the Jira ticket ID or branch description, ask before duplicating.
 - Run `jlog` after switching to confirm `@` is on the correct bookmark before starting any work.
 - The duplicated folder is the working directory for the entire session.
+- **When the user says the ticket is finished**, delete the duplicated folder:
+  ```sh
+  rm -rf /path/to/project-x-PROJECT-123-implement-feature
+  ```
 
 ## Custom scripts (Rust CLIs in ~/scripts/)
 
