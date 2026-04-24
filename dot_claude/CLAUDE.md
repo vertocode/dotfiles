@@ -103,6 +103,35 @@ Always name branches in the format `JIRA-100/cool-feature` — Jira ticket ID, a
 
 If the user asks to create a branch but hasn't provided the Jira ticket ID or a description, ask for both before proceeding.
 
+## Parallel branch workflow (repo duplication)
+
+When the user asks to work on a repo in a specific branch or ticket, **always** duplicate the repo folder first so each Claude session is fully isolated and multiple branches can run in parallel without interference.
+
+### Steps
+
+1. **Identify** the source repo path and branch name (format: `TICKET-ID/description`).
+
+2. **Derive the new folder name** by appending the branch to the repo name, replacing `/` with `-`:
+   - Source repo: `project-x`, branch: `PROJECT-123/implement-feature`
+   - New folder: `project-x-PROJECT-123-implement-feature`
+
+3. **Duplicate the repo** into the same parent directory:
+   ```sh
+   cp -r /path/to/project-x /path/to/project-x-PROJECT-123-implement-feature
+   ```
+
+4. **Set up the bookmark** inside the duplicated folder (`cd` there first):
+   - **New branch:** `source ~/.zshrc && jnewmain "feat: description" PROJECT-123/implement-feature`
+   - **Existing branch:** switch to it with `jj edit PROJECT-123/implement-feature` (confirm alias exists first — check `~/.zshrc`; ask user if not found)
+
+5. **All work happens inside the duplicated folder.** Never modify the original source repo.
+
+### Notes
+
+- If the user has not provided the Jira ticket ID or branch description, ask before duplicating.
+- Run `jlog` after switching to confirm `@` is on the correct bookmark before starting any work.
+- The duplicated folder is the working directory for the entire session.
+
 ## Custom scripts (Rust CLIs in ~/scripts/)
 
 | Alias | Purpose |
