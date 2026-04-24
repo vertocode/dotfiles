@@ -87,6 +87,82 @@ Also: if `jj squash` fails with a git index lock error, delete the stale lock fi
 rm -f <repo-root>/.git/index.lock
 ```
 
+### jj remote tracking and bookmark conflicts
+
+#### "Stale info" error from `jpush`
+
+Happens when jj's internal remote bookmark tracking is out of sync with the actual remote (common in duplicated repos where the fetch refspec was not set up). Fix sequence:
+
+```sh
+git config --add remote.origin.fetch '+refs/heads/TICKET-*:refs/remotes/origin/TICKET-*'
+git fetch origin
+jj git import
+```
+
+After `jj git import`, jj's view of `@origin` will match the real remote. Then `jpush` works if the local bookmark is a descendant of `@origin` (fast-forward).
+
+#### Conflicted bookmark (`??` in `jlog`)
+
+Shows as `BOOKMARK-NAME??` in `jlog`. Means jj sees the bookmark pointing to two different commits (usually one local, one from the remote import). Verify with:
+
+```sh
+jj bookmark list <bookmark-name>
+```
+
+Resolve by explicitly setting it to your local revision:
+
+```sh
+jj bookmark set <bookmark-name> -r <your-change-id>
+```
+
+Then `jpush` fast-forwards cleanly — **but only if your revision is a descendant of `@origin`**.
+
+#### When `jpush` is blocked (non-fast-forward / divergent histories)
+
+If the local bookmark is not a descendant of the remote tip, `jpush` refuses. This happens when:
+- The remote was force-pushed to a different history while you were working
+- Squashing commits changed the git hash of an already-pushed commit
+
+**Option A — Rebase onto remote tip (keeps history linear, may produce conflicts):**
+
+```sh
+jj git fetch
+jj git import
+jj rebase -r @ -d '<bookmark-name>@origin'
+# resolve any conflicts (see "Resolving rebase conflicts" above)
+jpush
+```
+
+Note: if both sides modified the same file, the rebase may only produce a trivial format/style diff. In that case the extra commit is fine to push as a fast-forward.
+
+**Option B — Create a clean squash commit via `git commit-tree` and force-push:**
+
+Useful when you want to replace N remote commits with one squashed commit (e.g. reviewer asks to squash):
+
+```sh
+# 1. Get the tree of the commit that has the correct final content
+TREE=$(git rev-parse <revision-with-correct-tree>^{tree})
+# 2. Point it at the desired parent on the remote
+PARENT=<desired-parent-git-hash>
+# 3. Create the squash commit (does not touch working copy or HEAD)
+NEW=$(git commit-tree $TREE -p $PARENT -m "fix: message")
+echo $NEW   # verify the hash
+git log --oneline $NEW | head -4   # verify ancestry
+# 4. Force-push (user must run this; Claude's permissions block force push)
+git push origin $NEW:refs/heads/<branch> \
+  --force-with-lease=refs/heads/<branch>:<current-remote-hash>
+```
+
+After the force-push succeeds, run `jj git fetch && jj git import` to resync jj.
+
+#### Checking the true remote state (bypasses stale tracking refs)
+
+`git fetch` and `jj git fetch` may not update tracking refs if the refspec is wrong. Always verify the real remote with:
+
+```sh
+git ls-remote origin <branch-name>
+```
+
 ### If a needed jj command is missing from ~/.zshrc
 
 Ask the user if they want to add it before proceeding. Do not run raw `jj` commands that are not aliased without confirming first.
@@ -143,7 +219,15 @@ When the user asks to work on a repo in a specific branch or ticket, **always** 
    - **New branch:** `source ~/.zshrc && jnewmain "feat: description" PROJECT-123/implement-feature`
    - **Existing branch:** switch to it with `jj edit PROJECT-123/implement-feature` (confirm alias exists first — check `~/.zshrc`; ask user if not found)
 
-5. **All work happens inside the duplicated folder.** Never modify the original source repo.
+5. **Fix the git fetch refspec** so `jj git fetch` tracks the feature branch (not just `main`). In a duplicated repo the refspec only fetches `main` by default, which causes `jpush` to fail with "stale info" whenever the remote moves:
+   ```sh
+   git config --add remote.origin.fetch '+refs/heads/PROJECT-*:refs/remotes/origin/PROJECT-*'
+   git fetch origin
+   jj git import
+   ```
+   Adjust the glob (`PROJECT-*`) to match the ticket prefix in use (e.g. `MARTECH-*`, `POST-*`).
+
+6. **All work happens inside the duplicated folder.** Never modify the original source repo.
 
 ### Notes
 
