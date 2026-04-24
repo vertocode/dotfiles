@@ -16,19 +16,24 @@ Always run `source ~/.zshrc` before using any alias.
 | Alias | Command | Purpose |
 |-------|---------|---------|
 | `jlog` | `jj log` | View commit graph |
+| `jbranch [base]` | `jj log -r "::@ ~ ::<base>@origin"` | Show commits unique to current branch vs base (defaults to `main`) |
+| `jedit <bookmark>` | `jj edit <bookmark>` | Switch `@` to an existing bookmark/revision |
 | `jdescribe "<msg>"` | `jj describe -m "<msg>"` | Set the description of the current change (`@`) |
 | `jdescribe "<msg>" <rev>` | `jj describe <rev> -m "<msg>"` | Set description of a specific revision |
 | `jnewmain "<msg>" <bookmark>` | `jj git fetch && jj new main -m "<msg>" && jj bookmark create <bookmark>` | Start a new change from main |
 | `jnewcurrent "<msg>" <bookmark>` | `jj git fetch && jj new @ -m "<msg>" && jj bookmark create <bookmark>` | Start a new change on top of current |
-| `jcommit` | `jj new @ -m "$1"` | Commit current change and start a new empty one |
+| `jnewfrom <from> "<msg>" <bookmark>` | `jj git fetch && jj new <from> -m "<msg>" && jj bookmark create <bookmark>` | Start a new change from a specific branch |
+| `jcommit "<msg>"` | finds current bookmark, creates a new child commit, advances the bookmark to it | Commit current change and advance the bookmark |
 | `jdiff` | shows diff vs origin for current bookmark | Review local changes vs remote |
-| `jpush` | `jj git push --all --deleted` | Push all bookmarks and delete remote ones that were deleted locally |
+| `jrestore [file]` | restores file (or whole bookmark) to its remote state | Hard-reset to remote; pass a path to restore just that file |
+| `jpush [bookmark]` | `jj git push --bookmark <bookmark>` or `--all --deleted` | Push a specific bookmark, or all bookmarks (default) |
 | `jtrack <bookmark>` | `jj bookmark track <bookmark> --remote=origin` | Track a remote bookmark |
 | `juntrack <bookmark>` | `jj bookmark untrack <bookmark>` | Untrack a remote bookmark |
 | `jfetch` | `jj git fetch --all-remotes` | Fetch from all remotes |
 | `jdelete <bookmark>` | `jj bookmark delete <bookmark>` | Delete a local bookmark |
 | `jsquash` | `jj squash` | Squash current change into parent |
 | `jrebase` | rebase entire local stack onto `main@origin` | Rebase all mutable local commits onto latest main |
+| `jrebaseparent [branch]` | rebase stack onto parent branch (auto-detected or explicit) | Rebase onto a parent feature branch instead of main |
 | `jclone <url>` | `jj git clone --colocate <url>` | Clone a repo with jj+git colocated |
 | `jinit` | `jj git init --colocate` | Init jj in an existing git repo |
 
@@ -85,6 +90,10 @@ rm -f <repo-root>/.git/index.lock
 ### If a needed jj command is missing from ~/.zshrc
 
 Ask the user if they want to add it before proceeding. Do not run raw `jj` commands that are not aliased without confirming first.
+
+### Keeping the alias table in sync
+
+Whenever a jj alias is added or changed in `~/.zshrc` (or discovered in `~/.zshrc` but absent from this table), **always update the Key aliases table above** in the same chezmoi edit session. This applies to jj aliases specifically; for git or other aliases, only sync when the user asks.
 
 ### git aliases (repos without `.jj`)
 
