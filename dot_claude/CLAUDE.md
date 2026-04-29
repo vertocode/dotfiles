@@ -39,11 +39,14 @@ Always run `source ~/.zshrc` before using any alias.
 
 ### Typical jj workflows
 
-- **Start work from main:** `source ~/.zshrc && jnewmain "feat: description" my-bookmark-name`
+- **Start work from main:** `source ~/.zshrc && jfetch && jnewmain "feat: description" my-bookmark-name`
+- **Start work from current:** `source ~/.zshrc && jfetch && jnewcurrent "feat: description" my-bookmark-name`
 - **Amend current change:** `source ~/.zshrc && jdescribe "updated message"`
 - **Push changes:** `source ~/.zshrc && jpush`
 - **Check diff vs remote:** `source ~/.zshrc && jdiff`
 - **Rebase onto latest main:** `source ~/.zshrc && jrebase`
+
+> **Always run `jfetch` before `jnewmain` or `jnewcurrent`** — even though the aliases call `jj git fetch` internally, `jfetch` fetches all remotes (`--all-remotes`) and ensures the local view is fully up to date before branching, preventing conflicts from stale base commits.
 
 ### Resolving rebase conflicts
 
@@ -216,8 +219,8 @@ When the user asks to work on a repo in a specific branch or ticket, **always** 
    ```
 
 4. **Set up the bookmark** inside the duplicated folder (`cd` there first):
-   - **New branch:** `source ~/.zshrc && jnewmain "feat: description" PROJECT-123/implement-feature`
-   - **Existing branch:** switch to it with `jj edit PROJECT-123/implement-feature` (confirm alias exists first — check `~/.zshrc`; ask user if not found)
+   - **New branch:** `source ~/.zshrc && jfetch && jnewmain "feat: description" PROJECT-123/implement-feature`
+   - **Existing branch:** `source ~/.zshrc && jfetch && jedit PROJECT-123/implement-feature` (confirm alias exists first — check `~/.zshrc`; ask user if not found)
 
 5. **Fix the git fetch refspec** so `jj git fetch` tracks the feature branch (not just `main`). In a duplicated repo the refspec only fetches `main` by default, which causes `jpush` to fail with "stale info" whenever the remote moves:
    ```sh
