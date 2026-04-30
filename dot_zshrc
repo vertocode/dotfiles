@@ -35,7 +35,15 @@ jnewfrom() {
   fi
   jj git fetch && jj new "$1" -m "$2" && jj bookmark create "$3"
 }
-jcommit() { jj new @ -m "$1"; }
+jcommit() {
+  local branch
+  branch=$(jj log -r 'heads(::@ & bookmarks())' --no-graph -T 'local_bookmarks.map(|b| b.name()).join(" ")' 2>/dev/null | xargs)
+  if [[ -z "$branch" ]]; then
+    echo "Error: no local bookmark found on current or ancestor commits"
+    return 1
+  fi
+  jj new "$branch" -m "$1" && jj bookmark set "$branch" -r @
+}
 jdiff() {
   local BOOKMARK
   BOOKMARK=$(jj log -r @ --no-graph --template 'bookmarks.join(" ")')
@@ -77,12 +85,17 @@ jrestore() {
   jj edit "${BOOKMARK}@origin"
 }
 jpush() {
-  if [[ -n "$1" ]]; then
-    jj git push --bookmark "$1"
-  else
-    jj git push --all --deleted
+  local BOOKMARK
+  BOOKMARK=$(jj log -r @ --no-graph --template 'bookmarks.join(" ")')
+  BOOKMARK=${BOOKMARK%% *}
+  BOOKMARK=${BOOKMARK%\*}
+  if [[ -z "$BOOKMARK" ]]; then
+    print -u2 "jpush: no bookmark found on @"
+    return 1
   fi
+  jj git push --bookmark "$BOOKMARK"
 }
+jpushall() { jj git push --all --deleted; }
 jtrack() { jj bookmark track "$1" --remote=origin; }
 juntrack() { jj bookmark untrack "$1"; }
 alias jfetch='jj git fetch --all-remotes'

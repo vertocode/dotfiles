@@ -26,7 +26,8 @@ Always run `source ~/.zshrc` before using any alias.
 | `jcommit "<msg>"` | finds current bookmark, creates a new child commit, advances the bookmark to it | Commit current change and advance the bookmark |
 | `jdiff` | shows diff vs origin for current bookmark | Review local changes vs remote |
 | `jrestore [file]` | restores file (or whole bookmark) to its remote state | Hard-reset to remote; pass a path to restore just that file |
-| `jpush [bookmark]` | `jj git push --bookmark <bookmark>` or `--all --deleted` | Push a specific bookmark, or all bookmarks (default) |
+| `jpush` | auto-detects bookmark on `@`, runs `jj git push --bookmark <that>` | Push only the current branch |
+| `jpushall` | `jj git push --all --deleted` | Push all bookmarks and delete remote ones removed locally |
 | `jtrack <bookmark>` | `jj bookmark track <bookmark> --remote=origin` | Track a remote bookmark |
 | `juntrack <bookmark>` | `jj bookmark untrack <bookmark>` | Untrack a remote bookmark |
 | `jfetch` | `jj git fetch --all-remotes` | Fetch from all remotes |
