@@ -280,8 +280,20 @@ Before | After
 ```
 
 - If there is no Jira ticket, omit that section.
-- If there is no visual demo, replace the table with a brief explanation of the observable change.
+- If there is no visual demo, omit the Demo section entirely. Do not replace it with a paragraph of explanation — the Description already covers that.
 - Do NOT append any "Generated with Claude Code" footer.
+
+### Tone and length
+
+Keep PR descriptions short and friendly — match length to code complexity, not formality. Write the way you'd brief a teammate in Slack.
+
+- For small changes (a single field added, a small bug fix, a config tweak): the **Description** is one or two sentences. No paragraphs of context, no "out of scope" notes, no rationale sections.
+- For larger or genuinely complex changes (architectural refactors, multi-system features): more detail is fine, but still cut anything a reviewer can see in the diff.
+- The diff is the source of truth. The description just orients the reader — it should be skimmable in ~10 seconds.
+
+### QA steps
+
+Keep the **How can QA test** list short and concrete. 2–4 numbered steps for a small change; only go longer when the feature really has multiple flows worth verifying. Each step should be one action the tester can actually do (open a page, click a button, check a network request) — not a paragraph.
 
 ## Dotfiles management with chezmoi
 
