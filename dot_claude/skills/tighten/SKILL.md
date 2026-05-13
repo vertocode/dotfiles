@@ -66,7 +66,8 @@ For each addition, ask the question and act:
 A change is only safe if you can confirm the project's own validation passes after it. Detect and run, in this order, whatever the project actually uses:
 1. Type check (e.g. `tsc --noEmit`, `mypy`, `go vet`).
 2. Linter (e.g. `eslint`, `oxlint`, `ruff`, `golangci-lint`).
-3. The specific test files you touched (full suite is overkill at this stage).
+3. Formatter (e.g. `prettier`, `oxfmt`, `biome`, `gofmt`, `ruff format`). Run the *write* mode, not just *check* — CI typically diffs the working tree after formatting, so unformatted code lands as a failure. Skip only if no format script exists.
+4. The specific test files you touched (full suite is overkill at this stage).
 
 Detect commands from `package.json` scripts, `Makefile`, `justfile`, language convention, or the project's CLAUDE.md / README. If you can't find them, ask the user which to run.
 
