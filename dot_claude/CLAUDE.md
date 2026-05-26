@@ -210,13 +210,13 @@ When the user asks to work on a repo in a specific branch or ticket, **always** 
 
 1. **Identify** the source repo path and branch name (format: `TICKET-ID/description`).
 
-2. **Derive the new folder name** by appending the branch to the repo name, replacing `/` with `-`:
+2. **Derive the new folder name** from the branch name, replacing `/` with `-`:
    - Source repo: `project-x`, branch: `PROJECT-123/implement-feature`
-   - New folder: `project-x-PROJECT-123-implement-feature`
+   - New folder: `PROJECT-123-implement-feature`
 
 3. **Duplicate the repo** into the same parent directory:
    ```sh
-   cp -r /path/to/project-x /path/to/project-x-PROJECT-123-implement-feature
+   cp -r /path/to/project-x /path/to/PROJECT-123-implement-feature
    ```
 
 4. **Set up the bookmark** inside the duplicated folder (`cd` there first):
@@ -240,7 +240,7 @@ When the user asks to work on a repo in a specific branch or ticket, **always** 
 - The duplicated folder is the working directory for the entire session.
 - **When the user says the ticket is finished**, delete the duplicated folder:
   ```sh
-  rm -rf /path/to/project-x-PROJECT-123-implement-feature
+  rm -rf /path/to/PROJECT-123-implement-feature
   ```
 
 ## Custom scripts (Rust CLIs in ~/scripts/)
