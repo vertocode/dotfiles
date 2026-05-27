@@ -97,6 +97,32 @@ jpush() {
 }
 jpushall() { jj git push --all --deleted; }
 jtrack() { jj bookmark track "$1" --remote=origin; }
+# Track every untracked remote bookmark that has at least one commit you
+# authored vs the target ($1 or main). Pair with `jrebase` + `jpushall` to
+# pull, rebase, and push an entire stack in one go after the parent branch
+# changes. Safe to re-run — already-tracked bookmarks are skipped.
+jtrackall() {
+  local target="${1:-main}"
+  local untracked
+  untracked=$(jj bookmark list --all-remotes 2>/dev/null \
+    | grep -oE '^[A-Za-z][A-Za-z0-9_/-]+@origin' \
+    | sed 's/@origin$//' \
+    | sort -u)
+  if [[ -z "$untracked" ]]; then
+    echo "jtrackall: nothing to track"
+    return 0
+  fi
+  local count=0
+  while IFS= read -r bm; do
+    [[ -z "$bm" || "$bm" == "$target" ]] && continue
+    if jj log -r "(::${bm}@origin ~ ::${target}@origin) & mine()" \
+         --no-graph -T 'change_id ++ "\n"' 2>/dev/null | grep -q .; then
+      echo "jtrackall: tracking ${bm}"
+      jj bookmark track "${bm}@origin" >/dev/null 2>&1 && count=$((count + 1))
+    fi
+  done <<< "$untracked"
+  echo "jtrackall: tracked $count bookmark(s)"
+}
 juntrack() { jj bookmark untrack "$1"; }
 alias jfetch='jj git fetch --all-remotes'
 jdelete() { jj bookmark delete "$1"; }

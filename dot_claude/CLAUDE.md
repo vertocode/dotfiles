@@ -29,6 +29,7 @@ Always run `source ~/.zshrc` before using any alias.
 | `jpush` | auto-detects bookmark on `@`, runs `jj git push --bookmark <that>` | Push only the current branch |
 | `jpushall` | `jj git push --all --deleted` | Push all bookmarks and delete remote ones removed locally |
 | `jtrack <bookmark>` | `jj bookmark track <bookmark> --remote=origin` | Track a remote bookmark |
+| `jtrackall [target]` | tracks every untracked remote bookmark with a commit you authored vs `target@origin` (defaults to `main`) | Bulk-track your remote feature branches so `jrebase` + `jpushall` can update them all |
 | `juntrack <bookmark>` | `jj bookmark untrack <bookmark>` | Untrack a remote bookmark |
 | `jfetch` | `jj git fetch --all-remotes` | Fetch from all remotes |
 | `jdelete <bookmark>` | `jj bookmark delete <bookmark>` | Delete a local bookmark |
