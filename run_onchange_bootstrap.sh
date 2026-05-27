@@ -57,6 +57,12 @@ if ! command -v gh >/dev/null 2>&1; then
   brew install gh
 fi
 
+# --- rtk (Rust Token Killer) ---
+if ! command -v rtk >/dev/null 2>&1; then
+  echo "Installing rtk..."
+  brew install rtk
+fi
+
 # --- Zed IDE ---
 if [ ! -d "/Applications/Zed.app" ]; then
   echo "Installing Zed..."

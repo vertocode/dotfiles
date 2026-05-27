@@ -322,3 +322,5 @@ All dotfiles (`.zshrc`, `CLAUDE.md`, etc.) are managed with chezmoi. When the us
 ### What counts as a chezmoi-managed file
 
 Any file where `chezmoi source-path <file>` returns a path (e.g. `~/.zshrc`, `~/.claude/CLAUDE.md`). If the command errors, the file is not managed — add it first with `chezmoi add <file>`.
+
+@RTK.md
