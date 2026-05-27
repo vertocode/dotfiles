@@ -63,6 +63,16 @@ if ! command -v rtk >/dev/null 2>&1; then
   brew install rtk
 fi
 
+# --- caveman (Claude Code skill, per Claude config dir) ---
+# Installs hooks + plugin into each Claude config dir we use.
+# Skipped if the activate hook already exists (idempotent fast-path).
+for dir in "$HOME/.claude" "$HOME/.claude-personal" "$HOME/.claude-work"; do
+  if [ ! -f "$dir/hooks/caveman-activate.js" ]; then
+    echo "Installing caveman into $dir..."
+    (cd "$HOME" && curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash -s -- --non-interactive --only claude --config-dir "$dir")
+  fi
+done
+
 # --- Zed IDE ---
 if [ ! -d "/Applications/Zed.app" ]; then
   echo "Installing Zed..."

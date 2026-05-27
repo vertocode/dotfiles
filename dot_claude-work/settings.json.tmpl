@@ -104,7 +104,16 @@
   "enabledPlugins": {
     "commit-commands@claude-plugins-official": true,
     "feature-dev@claude-plugins-official": true,
-    "pr-review-toolkit@claude-plugins-official": true
+    "pr-review-toolkit@claude-plugins-official": true,
+    "caveman@caveman": true
+  },
+  "extraKnownMarketplaces": {
+    "caveman": {
+      "source": {
+        "source": "github",
+        "repo": "JuliusBrussee/caveman"
+      }
+    }
   },
   "alwaysThinkingEnabled": true,
   "skipAutoPermissionPrompt": true,
@@ -116,6 +125,30 @@
           {
             "type": "command",
             "command": "rtk hook claude"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"{{ lookPath "node" }}\" \"{{ .chezmoi.homeDir }}/.claude-work/hooks/caveman-activate.js\"",
+            "timeout": 5,
+            "statusMessage": "Loading caveman mode..."
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"{{ lookPath "node" }}\" \"{{ .chezmoi.homeDir }}/.claude-work/hooks/caveman-mode-tracker.js\"",
+            "timeout": 5,
+            "statusMessage": "Tracking caveman mode..."
           }
         ]
       }
