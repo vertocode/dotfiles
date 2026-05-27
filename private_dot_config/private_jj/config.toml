@@ -1,0 +1,12 @@
+#:schema https://docs.jj-vcs.dev/latest/config-schema.json
+
+[user]
+name = "vertocode"
+email = "evertonvanoni1@gmail.com"
+
+# Default `immutable_heads()` locks every `@origin` bookmark, which makes our
+# own remote feature branches unrewriteable. Restrict to `main@origin` so only
+# the trunk is protected and `jj rebase` / `jj edit` works on our own pushed
+# branches without `--config` overrides.
+[revset-aliases]
+"immutable_heads()" = "main@origin"
