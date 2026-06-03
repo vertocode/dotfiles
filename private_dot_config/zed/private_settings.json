@@ -27,6 +27,7 @@
     "file_icons": true
   },
   "project_panel": {
-    "show_hidden_files": true
+    "show_hidden_files": true,
+    "dock": "left"
   },
 }
