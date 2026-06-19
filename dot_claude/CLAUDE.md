@@ -41,7 +41,9 @@ If the user asks to create a branch but hasn't provided the Jira ticket ID or a 
 These detailed workflows live in skills and load on demand — invoke them when relevant instead of keeping the detail always in context:
 
 - **`jj-workflow`** — jj (Jujutsu) aliases, commit/push/rebase, conflict resolution, remote bookmark / "stale info" / non-fast-forward troubleshooting.
-- **`parallel-branch-setup`** — duplicate the repo folder before working on a branch/ticket so sessions stay isolated and branches run in parallel. Use whenever starting work on a specific branch or Jira ticket.
+- **`start-ticket`** — entry point when starting a new ticket/branch. Decides WHERE work runs (current repo / specific folder / duplicate for parallel) then routes to `work-in-folder` or `parallel-branch-setup`. Use whenever starting work on a branch or Jira ticket and the location is not already decided.
+- **`work-in-folder`** — set up the branch bookmark in place (current repo or a named folder), no duplication.
+- **`parallel-branch-setup`** — duplicate the repo folder before working on a branch/ticket so sessions stay isolated and branches run in parallel. Used for the "duplicate for parallel" path.
 - **`create-pr`** — the required PR body structure (Description, Jira Task, Demo, How can QA test), tone, and QA steps. Use whenever opening a PR.
 - **`dotfiles-chezmoi`** — edit chezmoi-managed dotfiles (`.zshrc`, `~/.claude/CLAUDE.md`, etc.) via the source path, then apply and commit. Use whenever editing an alias or any managed dotfile.
 

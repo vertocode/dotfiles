@@ -1,11 +1,11 @@
 ---
 name: parallel-branch-setup
-description: Duplicate a repo folder before working on a branch/ticket so each Claude session is fully isolated and multiple branches run in parallel. Use whenever the user asks to work on a repo in a specific branch or Jira ticket. Branch format JIRA-100/cool-feature; ask for ticket ID + description if missing.
+description: Duplicate a repo folder before working on a branch/ticket so each Claude session is fully isolated and multiple branches run in parallel. Use for the "duplicate for parallel" path — usually routed here by the start-ticket dispatcher. Branch format JIRA-100/cool-feature; ask for ticket ID + description if missing.
 ---
 
 # Parallel branch workflow (repo duplication)
 
-When the user asks to work on a repo in a specific branch or ticket, **always** duplicate the repo folder first so each Claude session is fully isolated and multiple branches can run in parallel without interference.
+Use this when the chosen location mode is **duplicate for parallel** (see the `start-ticket` dispatcher). Duplicate the repo folder first so this Claude session is fully isolated and multiple branches run in parallel without interference. For in-place work (current repo or a named folder, no copy), use `work-in-folder` instead.
 
 ## Steps
 
@@ -15,10 +15,11 @@ When the user asks to work on a repo in a specific branch or ticket, **always** 
    - Source repo: `project-x`, branch: `PROJECT-123/implement-feature`
    - New folder: `PROJECT-123-implement-feature`
 
-3. **Duplicate the repo** into the same parent directory:
+3. **Duplicate the repo** into the same parent directory with `rsync` (not `cp -r`):
    ```sh
-   cp -r /path/to/project-x /path/to/PROJECT-123-implement-feature
+   rsync -a /path/to/project-x/ /path/to/PROJECT-123-implement-feature/
    ```
+   `cp -r` exits 1 on broken symlinks under `node_modules` (e.g. `.bin/sanity`); `rsync -a` copies symlinks as-is. Note the trailing slashes.
 
 4. **Set up the bookmark** inside the duplicated folder (`cd` there first):
    - **New branch:** `source ~/.zshrc && jfetch && jnewmain "feat: description" PROJECT-123/implement-feature`
@@ -39,6 +40,7 @@ When the user asks to work on a repo in a specific branch or ticket, **always** 
 - If the user has not provided the Jira ticket ID or branch description, ask before duplicating.
 - Run `jlog` after switching to confirm `@` is on the correct bookmark before starting any work.
 - The duplicated folder is the working directory for the entire session.
+- **spanx-storefront:** after `jnewmain` rebases onto latest main, regenerate the gitignored route types or `tsc` throws phantom TS2307 errors: `cd apps/storefront && bunx react-router typegen`.
 - **When the user says the ticket is finished**, delete the duplicated folder:
   ```sh
   rm -rf /path/to/PROJECT-123-implement-feature
