@@ -43,6 +43,15 @@ color_for_pct() {
     fi
 }
 
+zone_label() {
+    local pct=$1
+    if [ "$pct" -ge 80 ]; then printf "Dumb"
+    elif [ "$pct" -ge 60 ]; then printf "Caution"
+    elif [ "$pct" -ge 40 ]; then printf "Watch"
+    else printf "Smart"
+    fi
+}
+
 build_bar() {
     local pct=$1
     local width=$2
@@ -146,6 +155,7 @@ fi
 
 # ── LINE 1: Model │ Context % │ Directory (branch) │ Session │ Thinking ──
 pct_color=$(color_for_pct "$pct_used")
+zone=$(zone_label "$pct_used")
 cwd=$(echo "$input" | jq -r '.cwd // ""')
 [ -z "$cwd" ] || [ "$cwd" = "null" ] && cwd=$(pwd)
 dirname=$(basename "$cwd")
@@ -178,7 +188,7 @@ fi
 
 line1="${blue}${model_name}${reset}"
 line1+="${sep}"
-line1+="✍️  ${pct_color}${used_tokens} ${pct_used}%${reset}"
+line1+="✍️  ${pct_color}${used_tokens} ${pct_used}% (${zone})${reset}"
 line1+="${sep}"
 line1+="${cyan}${dirname}${reset}"
 if [ -n "$git_branch" ]; then
