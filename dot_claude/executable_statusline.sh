@@ -115,6 +115,7 @@ pct=$(( used * 100 / ctx_size ))
 zone=$(zone_name "$pct")
 zc=$(zone_color "$zone")
 cost=$(session_cost "$model" "$inp_tok" "$cw_tok" "$cr_tok")
+session_id=$(echo "$input" | jq -r '.session.id // empty')
 
 effort="default"
 [ -f "$HOME/.claude/settings.json" ] && \
@@ -154,11 +155,14 @@ esac
 sep=" ${c_dot}·${r} "
 
 line1="${c_model}◆ ${model}${r}"
-line1+="${sep}${zc}${tokens} ${pct}% ${zone}${r}  ${dim}${cost}${r}"
+line1+="${sep}${dim}Tokens${r} ${zc}${tokens}/${pct}% (${zone})${r}  ${dim}${cost}${r}"
 line1+="${sep}${c_dir}${dir}${r}"
 [ -n "$branch" ] && line1+=" ${c_branch}(${branch}${c_dirty}${dirty}${c_branch})${r}"
 [ -n "$duration" ] && line1+="${sep}${c_time}${duration}${r}"
 line1+="${sep}${dim}${effort_fmt}${r}"
+
+line2=""
+[ -n "$session_id" ] && line2="${dim}session ${r}${c_time}${session_id}${r}"
 
 # ── OAuth token ───────────────────────────────────────────────────────────────
 get_token() {
@@ -244,5 +248,6 @@ fi
 
 # ── Output ────────────────────────────────────────────────────────────────────
 printf "%b" "$line1"
+[ -n "$line2" ] && printf "\n%b" "$line2"
 [ -n "$rate_line" ] && printf "\n\n%b" "$rate_line"
 exit 0
