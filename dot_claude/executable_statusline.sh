@@ -120,8 +120,8 @@ format_reset_time() {
 # ── Extract JSON data ───────────────────────────────────
 model_name=$(echo "$input" | jq -r '.model.display_name // "Claude"')
 
-size=$(echo "$input" | jq -r '.context_window.context_window_size // 200000')
-[ "$size" -eq 0 ] 2>/dev/null && size=200000
+size=$(echo "$input" | jq -r '.context_window.context_window_size // 1000000')
+[ "$size" -eq 0 ] 2>/dev/null && size=1000000
 
 input_tokens=$(echo "$input" | jq -r '.context_window.current_usage.input_tokens // 0')
 cache_create=$(echo "$input" | jq -r '.context_window.current_usage.cache_creation_input_tokens // 0')
@@ -136,6 +136,7 @@ if [ "$size" -gt 0 ]; then
 else
     pct_used=0
 fi
+[ "$pct_used" -gt 100 ] 2>/dev/null && pct_used=100
 
 effort="default"
 settings_path="$HOME/.claude/settings.json"
