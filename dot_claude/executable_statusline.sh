@@ -227,9 +227,9 @@ if [ -n "$usage" ] && echo "$usage" | jq -e . >/dev/null 2>&1; then
     sd_bar=$(build_bar "$sd_pct" "$bw")
     sd_zc=$(zone_color "$(zone_name "$sd_pct")")
 
-    rate_line="  ${dim}5h${r} ${fh_bar} ${fh_zc}${fh_pct}%${r} ${c_time}→ ${fh_rst}${r}"
+    rate_line="  ${dim}current${r} ${fh_bar} ${fh_zc}${fh_pct}%${r} ${c_time}→ ${fh_rst}${r}"
     rate_line+="   ${dim}╱${r}   "
-    rate_line+="${dim}7d${r} ${sd_bar} ${sd_zc}${sd_pct}%${r} ${c_time}→ ${sd_rst}${r}"
+    rate_line+="${dim}weekly${r} ${sd_bar} ${sd_zc}${sd_pct}%${r} ${c_time}→ ${sd_rst}${r}"
 
     extra=$(echo "$usage" | jq -r '.extra_usage.is_enabled // false')
     if [ "$extra" = "true" ]; then
