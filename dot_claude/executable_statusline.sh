@@ -156,16 +156,13 @@ esac
 
 # ── Rows ──────────────────────────────────────────────────────────────────────
 sep=" ${c_dot}·${r} "
-ctx_bar=$(build_bar "$pct" 10)
-
 c_add='\033[38;2;0;200;80m'
 c_del='\033[38;2;255;85;85m'
 
-# Row 1: model · tokens/% zone bar · cost
-row1="${c_model}◆ ${model}${r}"
-row1+="${sep}${dim}Tokens${r} ${zc}${tokens}/${pct}% (${zone})${r} ${ctx_bar}"
-row1+="  ${dim}${cost}${r}"
+# plan + row1 built after usage fetch below
+plan=""
 
+# Row 1: model · tokens/% zone bar · cost · effort · plan (filled after usage fetch)
 # Row 2: dir (branch) +add -del
 row2="${c_dir}${dir}${r}"
 if [ -n "$branch" ]; then
@@ -174,11 +171,9 @@ if [ -n "$branch" ]; then
     [ -n "$diff_del" ] && row2+=" ${c_del}-${diff_del}${r}"
 fi
 
-# Row 3: duration · effort · session
+# Row 3: duration · session
 row3=""
 [ -n "$duration" ] && row3+="${c_time}${duration}${r}"
-[ -n "$row3" ] && row3+="${sep}"
-row3+="${dim}${effort_fmt}${r}"
 [ -n "$session_id" ] && row3+="${sep}${dim}session ${r}${c_time}${session_id}${r}"
 
 # ── OAuth token ───────────────────────────────────────────────────────────────
@@ -231,6 +226,30 @@ if [ -z "$usage" ]; then
     fi
     [ -z "$usage" ] && [ -f "$cache" ] && usage=$(cat "$cache" 2>/dev/null)
 fi
+
+# ── Plan detection ───────────────────────────────────────────────────────────
+if [ -n "$usage" ] && echo "$usage" | jq -e . >/dev/null 2>&1; then
+    extra_enabled=$(echo "$usage" | jq -r '.extra_usage.is_enabled // false')
+    disabled_reason=$(echo "$usage" | jq -r '.extra_usage.disabled_reason // empty')
+    if [[ "$disabled_reason" == *"org_level"* ]]; then
+        plan="Teams"
+    elif [ "$extra_enabled" = "true" ]; then
+        plan="Max"
+    else
+        plan="Pro"
+    fi
+else
+    plan="API"
+fi
+
+# ── Build row 1 (needs plan) ──────────────────────────────────────────────────
+sep=" ${c_dot}·${r} "
+ctx_bar=$(build_bar "$pct" 10)
+row1="${c_model}◆ ${model}${r}"
+row1+="${sep}${dim}Tokens${r} ${zc}${tokens}/${pct}% (${zone})${r} ${ctx_bar}"
+row1+="  ${dim}${cost}${r}"
+row1+="${sep}${dim}${effort_fmt}${r}"
+row1+="${sep}${dim}${plan}${r}"
 
 # ── Rate limit line ───────────────────────────────────────────────────────────
 rate_line=""
