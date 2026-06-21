@@ -125,10 +125,13 @@ cwd=$(echo "$input" | jq -r '.cwd // ""')
 [ -z "$cwd" ] || [ "$cwd" = "null" ] && cwd=$(pwd)
 dir=$(basename "$cwd")
 
-branch="" dirty=""
+branch="" dirty="" diff_add="" diff_del=""
 if git -C "$cwd" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     branch=$(git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null)
     [ -n "$(git -C "$cwd" status --porcelain 2>/dev/null)" ] && dirty="*"
+    diff_stat=$(git -C "$cwd" diff HEAD --shortstat 2>/dev/null)
+    diff_add=$(echo "$diff_stat" | grep -o '[0-9]* insertion' | grep -o '[0-9]*')
+    diff_del=$(echo "$diff_stat" | grep -o '[0-9]* deletion' | grep -o '[0-9]*')
 fi
 
 duration=""
@@ -153,11 +156,19 @@ esac
 
 # ── Line 1 ────────────────────────────────────────────────────────────────────
 sep=" ${c_dot}·${r} "
+ctx_bar=$(build_bar "$pct" 10)
+
+c_add='\033[38;2;0;200;80m'   # green
+c_del='\033[38;2;255;85;85m'  # red
 
 line1="${c_model}◆ ${model}${r}"
-line1+="${sep}${dim}Tokens${r} ${zc}${tokens}/${pct}% (${zone})${r}  ${dim}${cost}${r}"
+line1+="${sep}${dim}Tokens${r} ${zc}${tokens}/${pct}% (${zone})${r} ${ctx_bar}  ${dim}${cost}${r}"
 line1+="${sep}${c_dir}${dir}${r}"
-[ -n "$branch" ] && line1+=" ${c_branch}(${branch}${c_dirty}${dirty}${c_branch})${r}"
+if [ -n "$branch" ]; then
+    line1+=" ${c_branch}(${branch}${c_dirty}${dirty}${c_branch})${r}"
+    [ -n "$diff_add" ] && line1+=" ${c_add}+${diff_add}${r}"
+    [ -n "$diff_del" ] && line1+=" ${c_del}-${diff_del}${r}"
+fi
 [ -n "$duration" ] && line1+="${sep}${c_time}${duration}${r}"
 line1+="${sep}${dim}${effort_fmt}${r}"
 
