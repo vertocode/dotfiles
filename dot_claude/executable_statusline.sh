@@ -52,6 +52,24 @@ zone_label() {
     fi
 }
 
+session_cost() {
+    local name="$1" inp="$2" cw="$3" cr="$4"
+    local p_in p_cw p_cr
+    case "$name" in
+        *"Fable 5"*|*"Mythos"*) p_in=10;  p_cw=12.5; p_cr=1.0  ;;
+        *"Opus"*)               p_in=5;   p_cw=6.25; p_cr=0.5  ;;
+        *"Haiku"*)              p_in=1;   p_cw=1.25; p_cr=0.1  ;;
+        *)                      p_in=3;   p_cw=3.75; p_cr=0.3  ;;
+    esac
+    awk "BEGIN {
+        cost = ($inp * $p_in + $cw * $p_cw + $cr * $p_cr) / 1000000
+        if (cost < 0.001)      printf \"~\$0.00\"
+        else if (cost < 0.01)  printf \"~\$%.3f\", cost
+        else if (cost < 0.1)   printf \"~\$%.3f\", cost
+        else                   printf \"~\$%.2f\", cost
+    }"
+}
+
 build_bar() {
     local pct=$1
     local width=$2
@@ -156,6 +174,7 @@ fi
 # ── LINE 1: Model │ Context % │ Directory (branch) │ Session │ Thinking ──
 pct_color=$(color_for_pct "$pct_used")
 zone=$(zone_label "$pct_used")
+cost=$(session_cost "$model_name" "$input_tokens" "$cache_create" "$cache_read")
 cwd=$(echo "$input" | jq -r '.cwd // ""')
 [ -z "$cwd" ] || [ "$cwd" = "null" ] && cwd=$(pwd)
 dirname=$(basename "$cwd")
@@ -188,7 +207,7 @@ fi
 
 line1="${blue}${model_name}${reset}"
 line1+="${sep}"
-line1+="✍️  ${pct_color}${used_tokens} ${pct_used}% (${zone})${reset}"
+line1+="✍️  ${pct_color}${used_tokens} ${pct_used}% (${zone})${reset} ${dim}${cost}${reset}"
 line1+="${sep}"
 line1+="${cyan}${dirname}${reset}"
 if [ -n "$git_branch" ]; then
