@@ -154,26 +154,32 @@ case "$effort" in
     *)      effort_fmt="◆ default" ;;
 esac
 
-# ── Line 1 ────────────────────────────────────────────────────────────────────
+# ── Rows ──────────────────────────────────────────────────────────────────────
 sep=" ${c_dot}·${r} "
 ctx_bar=$(build_bar "$pct" 10)
 
-c_add='\033[38;2;0;200;80m'   # green
-c_del='\033[38;2;255;85;85m'  # red
+c_add='\033[38;2;0;200;80m'
+c_del='\033[38;2;255;85;85m'
 
-line1="${c_model}◆ ${model}${r}"
-line1+="${sep}${dim}Tokens${r} ${zc}${tokens}/${pct}% (${zone})${r} ${ctx_bar}  ${dim}${cost}${r}"
-line1+="${sep}${c_dir}${dir}${r}"
+# Row 1: model · tokens/% zone bar · cost
+row1="${c_model}◆ ${model}${r}"
+row1+="${sep}${dim}Tokens${r} ${zc}${tokens}/${pct}% (${zone})${r} ${ctx_bar}"
+row1+="  ${dim}${cost}${r}"
+
+# Row 2: dir (branch) +add -del
+row2="${c_dir}${dir}${r}"
 if [ -n "$branch" ]; then
-    line1+=" ${c_branch}(${branch}${c_dirty}${dirty}${c_branch})${r}"
-    [ -n "$diff_add" ] && line1+=" ${c_add}+${diff_add}${r}"
-    [ -n "$diff_del" ] && line1+=" ${c_del}-${diff_del}${r}"
+    row2+=" ${c_branch}(${branch}${c_dirty}${dirty}${c_branch})${r}"
+    [ -n "$diff_add" ] && row2+=" ${c_add}+${diff_add}${r}"
+    [ -n "$diff_del" ] && row2+=" ${c_del}-${diff_del}${r}"
 fi
-[ -n "$duration" ] && line1+="${sep}${c_time}${duration}${r}"
-line1+="${sep}${dim}${effort_fmt}${r}"
 
-line2=""
-[ -n "$session_id" ] && line2="${dim}session ${r}${c_time}${session_id}${r}"
+# Row 3: duration · effort · session
+row3=""
+[ -n "$duration" ] && row3+="${c_time}${duration}${r}"
+[ -n "$row3" ] && row3+="${sep}"
+row3+="${dim}${effort_fmt}${r}"
+[ -n "$session_id" ] && row3+="${sep}${dim}session ${r}${c_time}${session_id}${r}"
 
 # ── OAuth token ───────────────────────────────────────────────────────────────
 get_token() {
@@ -258,7 +264,8 @@ if [ -n "$usage" ] && echo "$usage" | jq -e . >/dev/null 2>&1; then
 fi
 
 # ── Output ────────────────────────────────────────────────────────────────────
-printf "%b" "$line1"
-[ -n "$line2" ] && printf "\n%b" "$line2"
+printf "%b" "$row1"
+printf "\n%b" "$row2"
+printf "\n%b" "$row3"
 [ -n "$rate_line" ] && printf "\n\n%b" "$rate_line"
 exit 0
