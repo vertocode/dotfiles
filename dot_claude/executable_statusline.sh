@@ -13,6 +13,8 @@ c_branch='\033[38;2;200;200;200m' # silver
 c_dirty='\033[38;2;255;180;50m'   # amber
 c_time='\033[38;2;140;160;180m'   # steel
 c_dot='\033[38;2;80;80;100m'      # muted
+c_add='\033[38;2;0;200;80m'       # green
+c_del='\033[38;2;255;85;85m'      # red
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 zone_color() {
@@ -41,23 +43,6 @@ fmt_tokens() {
     fi
 }
 
-session_cost() {
-    local name=$1 inp=$2 cw=$3 cr=$4
-    local pi pw pr
-    case "$name" in
-        *"Fable 5"*|*"Mythos"*) pi=10;  pw=12.5; pr=1.0  ;;
-        *"Opus"*)               pi=5;   pw=6.25; pr=0.5  ;;
-        *"Haiku"*)              pi=1;   pw=1.25; pr=0.1  ;;
-        *)                      pi=3;   pw=3.75; pr=0.3  ;;
-    esac
-    awk "BEGIN{
-        c=($inp*$pi+$cw*$pw+$cr*$pr)/1000000
-        if(c<0.001)     printf \"~\$0.00\"
-        else if(c<0.1)  printf \"~\$%.3f\",c
-        else            printf \"~\$%.2f\",c
-    }"
-}
-
 build_bar() {
     local pct=$1 width=$2
     [ "$pct" -lt 0 ] 2>/dev/null && pct=0
@@ -70,29 +55,16 @@ build_bar() {
     printf "${zc}${f}${dim}${e}${r}"
 }
 
-iso_to_epoch() {
-    local s="$1" e
-    e=$(date -d "$s" +%s 2>/dev/null) && { echo "$e"; return 0; }
-    local st="${s%%.*}"; st="${st%%Z}"; st="${st%%+*}"; st="${st%%-[0-9][0-9]:[0-9][0-9]}"
-    if [[ "$s" == *Z* ]] || [[ "$s" == *+00:00* ]]; then
-        e=$(env TZ=UTC date -j -f "%Y-%m-%dT%H:%M:%S" "$st" +%s 2>/dev/null)
-    else
-        e=$(date -j -f "%Y-%m-%dT%H:%M:%S" "$st" +%s 2>/dev/null)
-    fi
-    [ -n "$e" ] && echo "$e"
-}
-
-fmt_reset() {
-    local iso=$1 style=$2
-    [ -z "$iso" ] || [ "$iso" = "null" ] && return
-    local ep; ep=$(iso_to_epoch "$iso"); [ -z "$ep" ] && return
+fmt_epoch() {
+    local ep=$1 style=$2
+    [ -z "$ep" ] || [ "$ep" = "null" ] && return
     case "$style" in
         time)
-            date -j -r "$ep" +"%l:%M%p" 2>/dev/null | sed 's/^ //;s/\.//g' | tr '[:upper:]' '[:lower:]' \
+            date -r "$ep" +"%l:%M%p" 2>/dev/null | sed 's/^ //;s/\.//g' | tr '[:upper:]' '[:lower:]' \
             || date -d "@$ep" +"%l:%M%P" 2>/dev/null | sed 's/^ //;s/\.//g'
             ;;
         datetime)
-            date -j -r "$ep" +"%b %-d, %l:%M%p" 2>/dev/null | sed 's/  / /g;s/^ //;s/\.//g' | tr '[:upper:]' '[:lower:]' \
+            date -r "$ep" +"%b %-d, %l:%M%p" 2>/dev/null | sed 's/  / /g;s/^ //;s/\.//g' | tr '[:upper:]' '[:lower:]' \
             || date -d "@$ep" +"%b %-d, %l:%M%P" 2>/dev/null | sed 's/  / /g;s/^ //;s/\.//g'
             ;;
     esac
@@ -114,39 +86,32 @@ pct=$(( used * 100 / ctx_size ))
 [ "$pct" -gt 100 ] 2>/dev/null && pct=100
 zone=$(zone_name "$pct")
 zc=$(zone_color "$zone")
-cost=$(session_cost "$model" "$inp_tok" "$cw_tok" "$cr_tok")
-session_id=$(echo "$input" | jq -r '.session.id // empty')
 
-effort="default"
-[ -f "$HOME/.claude/settings.json" ] && \
-    effort=$(jq -r '.effortLevel // "default"' "$HOME/.claude/settings.json" 2>/dev/null)
-
-cwd=$(echo "$input" | jq -r '.cwd // ""')
-[ -z "$cwd" ] || [ "$cwd" = "null" ] && cwd=$(pwd)
-dir=$(basename "$cwd")
-
-branch="" dirty="" diff_add="" diff_del=""
-if git -C "$cwd" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    branch=$(git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null)
-    [ -n "$(git -C "$cwd" status --porcelain 2>/dev/null)" ] && dirty="*"
-    diff_stat=$(git -C "$cwd" diff HEAD --shortstat 2>/dev/null)
-    diff_add=$(echo "$diff_stat" | grep -o '[0-9]* insertion' | grep -o '[0-9]*')
-    diff_del=$(echo "$diff_stat" | grep -o '[0-9]* deletion' | grep -o '[0-9]*')
+# Real cost from payload
+cost_usd=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
+if [ -n "$cost_usd" ]; then
+    cost=$(awk "BEGIN{printf \"\$%.2f\", $cost_usd}")
+else
+    cost=""
 fi
 
+# Session
+session_id=$(echo "$input"   | jq -r '.session_id // empty')
+session_name=$(echo "$input" | jq -r '.session_name // empty')
+
+# Duration from total_duration_ms
+dur_ms=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
 duration=""
-sess_start=$(echo "$input" | jq -r '.session.start_time // empty')
-if [ -n "$sess_start" ] && [ "$sess_start" != "null" ]; then
-    ep=$(iso_to_epoch "$sess_start")
-    if [ -n "$ep" ]; then
-        elapsed=$(( $(date +%s) - ep ))
-        if   [ "$elapsed" -ge 3600 ]; then duration="$(( elapsed/3600 ))h$(( (elapsed%3600)/60 ))m"
-        elif [ "$elapsed" -ge 60 ];   then duration="$(( elapsed/60 ))m"
-        else duration="${elapsed}s"
-        fi
+if [ "$dur_ms" -gt 0 ] 2>/dev/null; then
+    elapsed=$(( dur_ms / 1000 ))
+    if   [ "$elapsed" -ge 3600 ]; then duration="$(( elapsed/3600 ))h$(( (elapsed%3600)/60 ))m"
+    elif [ "$elapsed" -ge 60 ];   then duration="$(( elapsed/60 ))m"
+    else duration="${elapsed}s"
     fi
 fi
 
+# Effort from payload
+effort=$(echo "$input" | jq -r '.effort.level // "default"')
 case "$effort" in
     high)   effort_fmt="▲ high"    ;;
     medium) effort_fmt="◆ medium"  ;;
@@ -154,45 +119,41 @@ case "$effort" in
     *)      effort_fmt="◆ default" ;;
 esac
 
-# ── Rows ──────────────────────────────────────────────────────────────────────
-sep=" ${c_dot}·${r} "
-c_add='\033[38;2;0;200;80m'
-c_del='\033[38;2;255;85;85m'
+# Rate limits from payload (no API call needed)
+fh_pct=$(echo "$input"      | jq -r '.rate_limits.five_hour.used_percentage // empty')
+fh_rst_ep=$(echo "$input"   | jq -r '.rate_limits.five_hour.resets_at // empty')
+sd_pct=$(echo "$input"      | jq -r '.rate_limits.seven_day.used_percentage // empty')
+sd_rst_ep=$(echo "$input"   | jq -r '.rate_limits.seven_day.resets_at // empty')
 
-# plan + row1 built after usage fetch below
-plan=""
+# Git
+cwd=$(echo "$input" | jq -r '.cwd // ""')
+[ -z "$cwd" ] || [ "$cwd" = "null" ] && cwd=$(pwd)
+dir=$(basename "$cwd")
 
-# Row 1: model · tokens/% zone bar · cost · effort · plan (filled after usage fetch)
-# Row 2: dir (branch) +add -del
-row2="${c_dir}${dir}${r}"
-if [ -n "$branch" ]; then
-    row2+=" ${c_branch}(${branch}${c_dirty}${dirty}${c_branch})${r}"
-    [ -n "$diff_add" ] && row2+=" ${c_add}+${diff_add}${r}"
-    [ -n "$diff_del" ] && row2+=" ${c_del}-${diff_del}${r}"
+branch="" dirty=""
+if git -C "$cwd" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    branch=$(git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null)
+    [ -n "$(git -C "$cwd" status --porcelain 2>/dev/null)" ] && dirty="*"
 fi
 
-# Row 3: duration · session
-row3=""
-[ -n "$duration" ] && row3+="${c_time}${duration}${r}"
-[ -n "$session_id" ] && row3+="${sep}${dim}session ${r}${c_time}${session_id}${r}"
+# Lines added/removed from session (payload)
+diff_add=$(echo "$input" | jq -r '.cost.total_lines_added // empty')
+diff_del=$(echo "$input" | jq -r '.cost.total_lines_removed // empty')
 
-# ── OAuth token ───────────────────────────────────────────────────────────────
+# ── OAuth (only for plan + extra usage) ──────────────────────────────────────
 get_token() {
     [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && { echo "$CLAUDE_CODE_OAUTH_TOKEN"; return; }
-
     if command -v security >/dev/null 2>&1; then
         local blob t
         blob=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null)
         t=$(echo "$blob" | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null)
         [ -n "$t" ] && [ "$t" != "null" ] && { echo "$t"; return; }
     fi
-
     local f="$HOME/.claude/.credentials.json"
     if [ -f "$f" ]; then
         local t; t=$(jq -r '.claudeAiOauth.accessToken // empty' "$f" 2>/dev/null)
         [ -n "$t" ] && [ "$t" != "null" ] && { echo "$t"; return; }
     fi
-
     if command -v secret-tool >/dev/null 2>&1; then
         local blob t
         blob=$(timeout 2 secret-tool lookup service "Claude Code-credentials" 2>/dev/null)
@@ -201,7 +162,6 @@ get_token() {
     fi
 }
 
-# ── Usage cache ───────────────────────────────────────────────────────────────
 cache="/tmp/claude/ctxstat-cache.json"
 mkdir -p /tmp/claude
 usage=""
@@ -227,10 +187,11 @@ if [ -z "$usage" ]; then
     [ -z "$usage" ] && [ -f "$cache" ] && usage=$(cat "$cache" 2>/dev/null)
 fi
 
-# ── Plan detection ───────────────────────────────────────────────────────────
+# ── Plan detection ────────────────────────────────────────────────────────────
+plan=""
 if [ -n "$usage" ] && echo "$usage" | jq -e . >/dev/null 2>&1; then
-    extra_enabled=$(echo "$usage" | jq -r '.extra_usage.is_enabled // false')
     disabled_reason=$(echo "$usage" | jq -r '.extra_usage.disabled_reason // empty')
+    extra_enabled=$(echo "$usage"   | jq -r '.extra_usage.is_enabled // false')
     if [[ "$disabled_reason" == *"org_level"* ]]; then
         plan="Teams"
     elif [ "$extra_enabled" = "true" ]; then
@@ -238,39 +199,60 @@ if [ -n "$usage" ] && echo "$usage" | jq -e . >/dev/null 2>&1; then
     else
         plan="Pro"
     fi
-else
-    plan="API"
+elif [ -n "$fh_pct" ]; then
+    plan="Pro"
 fi
 
-# ── Build row 1 (needs plan) ──────────────────────────────────────────────────
+# ── Build rows ────────────────────────────────────────────────────────────────
 sep=" ${c_dot}·${r} "
 ctx_bar=$(build_bar "$pct" 10)
+
+# Row 1: model · tokens/% zone bar · cost · effort · plan
 row1="${c_model}◆ ${model}${r}"
 row1+="${sep}${dim}Tokens${r} ${zc}${tokens}/${pct}% (${zone})${r} ${ctx_bar}"
-row1+="  ${dim}${cost}${r}"
+[ -n "$cost" ] && row1+="  ${cost}"
 row1+="${sep}${dim}${effort_fmt}${r}"
-row1+="${sep}${dim}${plan}${r}"
+[ -n "$plan" ] && row1+="${sep}${dim}${plan}${r}"
 
-# ── Rate limit line ───────────────────────────────────────────────────────────
+# Row 2: dir (branch) +add -del
+row2="${c_dir}${dir}${r}"
+if [ -n "$branch" ]; then
+    row2+=" ${c_branch}(${branch}${c_dirty}${dirty}${c_branch})${r}"
+    [ -n "$diff_add" ] && row2+=" ${c_add}+${diff_add}${r}"
+    [ -n "$diff_del" ] && row2+=" ${c_del}-${diff_del}${r}"
+fi
+
+# Row 3: duration · session name (or id fallback)
+row3=""
+[ -n "$duration" ] && row3+="${c_time}${duration}${r}"
+if [ -n "$session_name" ]; then
+    [ -n "$row3" ] && row3+="${sep}"
+    row3+="${dim}${session_name}${r}"
+elif [ -n "$session_id" ]; then
+    [ -n "$row3" ] && row3+="${sep}"
+    row3+="${dim}${session_id}${r}"
+fi
+
+# ── Rate limit line (from payload) ───────────────────────────────────────────
 rate_line=""
 
-if [ -n "$usage" ] && echo "$usage" | jq -e . >/dev/null 2>&1; then
+if [ -n "$fh_pct" ]; then
     bw=8
-
-    fh_pct=$(echo "$usage" | jq -r '.five_hour.utilization // 0' | awk '{printf "%.0f",$1}')
-    fh_rst=$(fmt_reset "$(echo "$usage" | jq -r '.five_hour.resets_at // empty')" "time")
     fh_bar=$(build_bar "$fh_pct" "$bw")
     fh_zc=$(zone_color "$(zone_name "$fh_pct")")
+    fh_rst=$(fmt_epoch "$fh_rst_ep" "time")
 
-    sd_pct=$(echo "$usage" | jq -r '.seven_day.utilization // 0' | awk '{printf "%.0f",$1}')
-    sd_rst=$(fmt_reset "$(echo "$usage" | jq -r '.seven_day.resets_at // empty')" "datetime")
     sd_bar=$(build_bar "$sd_pct" "$bw")
     sd_zc=$(zone_color "$(zone_name "$sd_pct")")
+    sd_rst=$(fmt_epoch "$sd_rst_ep" "datetime")
 
     rate_line="  ${dim}current${r} ${fh_bar} ${fh_zc}${fh_pct}%${r} ${c_time}→ ${fh_rst}${r}"
     rate_line+="   ${dim}╱${r}   "
     rate_line+="${dim}weekly${r} ${sd_bar} ${sd_zc}${sd_pct}%${r} ${c_time}→ ${sd_rst}${r}"
+fi
 
+# Extra usage from OAuth (Max plan)
+if [ -n "$usage" ] && echo "$usage" | jq -e . >/dev/null 2>&1; then
     extra=$(echo "$usage" | jq -r '.extra_usage.is_enabled // false')
     if [ "$extra" = "true" ]; then
         ex_pct=$(echo "$usage"  | jq -r '.extra_usage.utilization // 0'   | awk '{printf "%.0f",$1}')
@@ -285,6 +267,6 @@ fi
 # ── Output ────────────────────────────────────────────────────────────────────
 printf "%b" "$row1"
 printf "\n%b" "$row2"
-printf "\n%b" "$row3"
+[ -n "$row3" ] && printf "\n%b" "$row3"
 [ -n "$rate_line" ] && printf "\n\n%b" "$rate_line"
 exit 0
