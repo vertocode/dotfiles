@@ -223,6 +223,10 @@ if ! command -v zed >/dev/null 2>&1; then
   alias zed='/Applications/Zed.app/Contents/MacOS/cli'
 fi
 
+# Default editor — Zed CLI (--wait blocks terminal tools until file is closed)
+export EDITOR='/Applications/Zed.app/Contents/MacOS/cli --wait'
+export VISUAL="$EDITOR"
+
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
